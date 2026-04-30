@@ -1,3 +1,4 @@
+// src/app/page.tsx
 "use client";
 
 import { useState, useCallback, FormEvent } from "react";
@@ -97,24 +98,34 @@ export default function Home() {
   const [smsStatus, setSmsStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
 
   const onMapClick = useCallback(() => {
-    // Optional
+    // Optional: Deselect property when clicking empty map space
   }, []);
 
   const handleSmsSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!selectedProperty || !phoneNumber || !studentName) return;
+    
+    // Ensure all fields are filled before submitting
+    if (!selectedProperty || !phoneNumber || !studentName || !message) return;
 
     setSmsStatus("loading");
+
+    // Strictly format numbers to E.164 (remove any spaces)
+    const formattedStudentPhone = phoneNumber.replace(/\s+/g, '');
+    const formattedLandlordPhone = selectedProperty.landlordPhone.replace(/\s+/g, '');
+
     try {
       const res = await fetch("/api/sms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          studentPhone: phoneNumber,
-          landlordPhone: selectedProperty.landlordPhone,
-          propertyName: `${selectedProperty.name} (Inquiry from ${studentName})`,
+          studentName: studentName,
+          studentPhone: formattedStudentPhone,
+          landlordPhone: formattedLandlordPhone, // Make sure this matches your Sandbox Simulator number!
+          message: message,
+          propertyName: selectedProperty.name,
         }),
       });
+      
       if (res.ok) {
         setSmsStatus("success");
         setTimeout(() => {
@@ -144,7 +155,7 @@ export default function Home() {
             <a href="#" className="hover:text-white transition-colors">PROPERTIES</a>
             <a href="#" className="hover:text-white transition-colors">CONTACT</a>
           </nav>
-          <div className="w-8 h-8"></div> {/* Spacer for flex balance */}
+          <div className="w-8 h-8"></div>
         </header>
 
         <div className="flex-1 flex flex-col justify-center items-center z-10 w-full text-center">
@@ -159,7 +170,6 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Cinematic abstract background */}
         <div className="absolute inset-0 z-0 opacity-20 pointer-events-none" 
              style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, #3f3f46 0%, #09090b 70%)' }}>
         </div>
@@ -211,7 +221,7 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[900px]">
-            {/* Left Column: Dynamic Content Area (List OR Detail View) */}
+            {/* Left Column: Dynamic Content Area */}
             <div className="col-span-1 border border-zinc-900 bg-zinc-950/50 flex flex-col overflow-hidden relative">
               
               {!selectedProperty ? (
@@ -227,7 +237,7 @@ export default function Home() {
                           onClick={() => setSelectedProperty(prop)}
                           className="p-6 cursor-pointer hover:bg-zinc-900/50 transition-all duration-300 flex items-center group"
                         >
-                          {/* Thumbnail */}
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img 
                             src={prop.imageUrl} 
                             alt={prop.name} 
@@ -246,8 +256,8 @@ export default function Home() {
               ) : (
                 /* Dynamic Detail View */
                 <div className="flex-1 overflow-y-auto custom-scrollbar bg-zinc-950 animate-in slide-in-from-left flex flex-col">
-                  {/* Hero Image */}
                   <div className="relative w-full h-64 shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img 
                       src={selectedProperty.imageUrl} 
                       alt={selectedProperty.name}
@@ -266,7 +276,6 @@ export default function Home() {
                     <h4 className="text-2xl font-bold mb-1">{selectedProperty.name}</h4>
                     <p className="text-xl font-bold text-zinc-300 mb-6 border-b border-zinc-900 pb-4">{selectedProperty.price}</p>
                     
-                    {/* Key Stats */}
                     <div className="grid grid-cols-3 gap-4 mb-8">
                       <div className="flex flex-col items-center justify-center p-3 bg-zinc-900/50 rounded-lg border border-zinc-800/50">
                         <Bed className="w-5 h-5 text-zinc-400 mb-2" />
@@ -309,6 +318,7 @@ export default function Home() {
                         <div>
                           <textarea 
                             rows={3}
+                            required
                             placeholder="I am interested in scheduling a viewing..."
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
