@@ -27,6 +27,7 @@ export async function POST(request: Request) {
 
         // Send the SMS
         const result = await sms.send({
+            from: 'QejaYetu', // Sender ID
             to: [landlordPhone], 
             message: formattedMessage,
         } as any);
